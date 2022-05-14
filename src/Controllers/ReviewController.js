@@ -169,8 +169,18 @@ try{
 
  let{review,rating,reviewedBy}=data;
 
-
+if(!reviewedBy){
+    reviewedBy="Guest";
+}
  
+if(reviewedBy){
+    if(!validator.isValid(reviewedBy)){
+    
+          return res.status(400).send({status:false,msg:"reviewedBy is not valid"})
+    
+    }
+    }
+
 if(review){
 if(!validator.isValid(review)){
       
@@ -186,18 +196,6 @@ if(!validator.isRatingWithinRange(rating)){
 
 }
 }
-if(reviewedBy){
-if(!reviewedBy){
-
-    reviewedBy="Guest"
-}
-} 
-if(!validator.isValid(reviewedBy)){
-
-      return res.status(400).send({status:false,msg:"reviewedBy is not valid"})
-
-}
-
 
 let bookIdExists=await bookModel.findOne({_id:bookId})
 if(!bookIdExists){
