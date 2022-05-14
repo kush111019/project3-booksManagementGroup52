@@ -286,10 +286,10 @@ else if(subcategory){
     obj.releasedAt=records.releasedAt;
     obj.reviews=records.reviews;
 }
-if(Object.keys(obj).length<0)
-return res.status(400).send({status:false,msg:"no records are found"})
-console.log(obj)
+if(Object.keys(obj).length>0)
 return res.status(200).send({status:true,msg:"succcess",obj})
+else
+return res.status(400).send({status:false,msg:"no records are found"})
 }catch(err){
      
     console.log("this is the error", error)
