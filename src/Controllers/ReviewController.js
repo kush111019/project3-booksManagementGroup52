@@ -28,12 +28,12 @@ if(!validator.isValidObjectId(bookId)){
 let bookExists=await bookModel.findOne({_id:bookId})
 if(!bookExists){
 
-    return res.status(400).send({status:false,msg:"book not exist with this bookId"})
+    return res.status(404).send({status:false,msg:"book not exist with this bookId"})
 }
 
-let bookIsNotDeleted=await bookModel.findOne({isDeleted:false})
+let bookIsNotDeleted=await bookModel.findOne({_id:bookId,isDeleted:false})
 if(!bookIsNotDeleted){
-    return res.status(400).send({status:false,msg:"the book is already deleted"})
+    return res.status(404).send({status:false,msg:"the book is already deleted"})
 }
 
 let{review, rating, reviewedBy,isDeleted}=data;
@@ -109,7 +109,7 @@ let newRecord=await reviewModel.create(data)
 
 if(!newRecord){
 
-    return res.status(400).send({status:false,msg:"record not inserted"})
+    return res.status(500).send({status:false,msg:"record not inserted"})
 }
 else{
  updateReviewInBookModelAlso=await bookModel.findOneAndUpdate(
@@ -143,10 +143,7 @@ try{
     return res.status(400).send({status:false,msg:"body is missing"}) 
 
  }
- if(!bookId){
-
-     return res.status(400).send({status:false,msg:"bookId is missing"})
- }
+ 
  
  if(!validator.isValidObjectId(bookId)){
    
@@ -154,10 +151,7 @@ try{
 
  }
  
- if(!reviewId){
 
-    return res.status(400).send({status:false,msg:"reviewId is missing"})
- }
  
 
  if(!validator.isValidObjectId(reviewId)){
@@ -198,20 +192,29 @@ if(!validator.isRatingWithinRange(rating)){
 }
 
 let bookIdExists=await bookModel.findOne({_id:bookId})
-if(!bookIdExists){
+if(bookIdExists==null){
 
-   return res.status(400).send({status:false,msg:"no book exist with this bookId"})
+   return res.status(404).send({status:false,msg:"no book exists with this bookId"})
 
+}
+
+let bookIsNotDeleted=await bookModel.findOne({_id:bookId,isDeleted:false})
+if(bookIsNotDeleted==null){
+
+    return res.status(404).send({status:false,msg:"book is already deleted with this bookId"})
 }
 
 
 let reviewExists=await reviewModel.findOne({_id:reviewId})
-if(!reviewExists){
+if(reviewExists==null){
 
-    return res.status(400).send({status:false,msg:"no review exists with this reviewId"})
+    return res.status(404).send({status:false,msg:"no reivew exist with this reviewId"})
 }
 
-
+let reviewIsNotDeleted=await reviewModel.findOne({_id:reviewId,isDeleted:false})
+if(reviewIsNotDeleted==null){
+    return res.status(404).send({status:false,msg:"review is already deleted with this reviewId"})
+}
 if(review && rating && reviewedBy){
 
 let updateReview=await reviewModel.findOneAndUpdate(
@@ -451,18 +454,26 @@ try{
 
 let bookExistsWithThisBookId=await bookModel.findOne({_id:bookId})
 
-if(!bookExistsWithThisBookId){
+if(bookExistsWithThisBookId==null){
 
-    return res.status(400).send({status:false,msg:"no book exist with this bookId"})
+    return res.status(404).send({status:false,msg:"book not exists with this bookId"})
 }
 
+let bookIsNotDelted=await bookModel.findOne({_id:bookId,isDeleted:false})
+if(bookIsNotDelted==null){
+    return res.status(404).send({status:false,msg:"book is deleted with this bookId"})
+}
 let reviewExistsWithThisReviewId=await reviewModel.findOne({_id:reviewId});
 
-if(!reviewExistsWithThisReviewId){
+if(reviewExistsWithThisReviewId==null){
 
-    return res.status(400).send({status:false,msg:"no review exists with this reviewId"})
+    return res.status(404).send({status:false,msg:"review is not available with this reviewId"})
 }
 
+let reviewisNotDeleted=await reviewModel.findOne({_id:reviewId,isDeleted:false})
+if(reviewisNotDeleted==null){
+    return res.status(404).send({status:false,msg:"reivew is deleted"})
+}
 let updatedReviewRecord=await reviewModel.findOneAndUpdate(
 
   {_id:reviewId},

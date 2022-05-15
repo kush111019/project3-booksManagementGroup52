@@ -10,9 +10,9 @@ const reviewController=require("../Controllers/reviewController")
 let authentication = async function (req, res, next) {
     try {
         let token = req.headers['x-api-key'];
-        if (!token) return res.status(403).send({ status: false, message: "Please Enter your Given Token if not then login first" });
+        if (!token) return res.status(400).send({ status: false, message: "Please Enter your Given Token if not then login first" });
         let decode = jwt.verify(token, "Group-52");
-        if (!decode) return res.status(401).send({ status: false, message: "Your are not Authenticate to Enter" })
+        if (!decode) return res.status(501).send({ status: false, message: "Your are not Authenticate to Enter" })
         next();
     } catch (err) {
         res.status(500).send({ status: false, message: err.message });
@@ -26,12 +26,12 @@ let autherizationUsingBody = async function (req, res, next) {
         if (!token) return res.status(400).send({ status: false, message: "Please enter your token" })
 
         let userId=req.body.userId;
-
+       console.log(userId)
         let decode = jwt.verify(token, "Group-52");
-        if (!decode) return res.status(400).send({ status: false, message: "inavalid token" })
+        if (!decode) return res.status(501).send({ status: false, message: "inavalid token" })
         let logged = decode.userId
-
-        if (logged != userId) return res.status(401).send({ status: false, message: "You are not Autherizsed to make changes" })
+        console.log(userId)
+        if (logged != userId) return res.status(503).send({ status: false, message: "You are not Autherizsed to make changes" })
 
         next();
 
@@ -51,12 +51,31 @@ let autherizationUsingParams=async function(req,res,next){
         let book=await bookModel.findOne({_id:bookId})
 
         let userId=book.userId;
-
+    
         let decode = jwt.verify(token, "Group-52");
-        if (!decode) return res.status(400).send({ status: false, message: "inavalid token" })
-        let logged = decode.userId
+        if (!decode) return res.status(501).send({ status: false, message: "inavalid token" })
+        let logged=decode.userId
+        if (logged != userId) return res.status(503).send({ status: false, message: "You are not Autherizsed to make changes" })
 
-        if (logged != userId) return res.status(401).send({ status: false, message: "You are not Autherizsed to make changes" })
+        next();
+
+    } catch (err) {
+        res.status(500).send({ status: false, message: err.message });
+    }
+};
+
+let autherizationUsingParamsForBook=async function(req,res,next){
+
+    try {
+        let token = req.headers['x-api-key'];
+    
+        if (!token) return res.status(400).send({ status: false, message: "Please enter your token" })
+
+        let userId=req.query.userId
+        let decode = jwt.verify(token, "Group-52");
+        if (!decode) return res.status(501).send({ status: false, message: "inavalid token" })
+        let logged = decode.userId
+        if (logged != userId) return res.status(503).send({ status: false, message: "You are not Autherizsed to make changes" })
 
         next();
 
@@ -66,5 +85,6 @@ let autherizationUsingParams=async function(req,res,next){
 };
 
 
-module.exports={authentication,autherizationUsingBody,autherizationUsingParams}
+
+module.exports={authentication,autherizationUsingBody,autherizationUsingParams,autherizationUsingParamsForBook}
 

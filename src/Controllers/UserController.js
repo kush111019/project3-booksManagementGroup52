@@ -71,19 +71,18 @@ if(!validator.isValidPassword(password)){
 
 let mobileNumberExists=await userModel.findOne({phone:phone})
 if(mobileNumberExists){
-   return res.status(400).send({status:false,msg:"phone number already exists"})
+   return res.status(404).send({status:false,msg:"phone number already exists"})
 }
 
 
 let emailAlreadyExists=await userModel.findOne({email:email})
 if(emailAlreadyExists){
-    return res.status(400).send({status:false,msg:"email number already used"})
+    return res.status(404).send({status:false,msg:"email number already used"})
 }
 
 
 let insertedRecord=await userModel.create(obj);
 res.status(201).send({status:true,msg:"success",data:insertedRecord})
-
 }catch{
     console.log("this is the error", error)
         res.status(500).send({ status: false, msg: error.message })
@@ -120,17 +119,17 @@ const login=async function(req,res){
     let emailExists=await userModel.findOne({email:email})
     if(!emailExists){
 
-        return res.status(400).send({status:false,msg:"email not exist"})
+        return res.status(404).send({status:false,msg:"email not exist"})
     }
     let passwordExists=await userModel.findOne({password:password})
     if(!passwordExists){
 
-        return res.status(400).send({status:false,msg:"password not exist"})
+        return res.status(404).send({status:false,msg:"password not exist"})
     }
 
     const userExist=await userModel.findOne({email:email,password:password})
     if(!userExist){
-        return res.status(400).send({status:false,msg:"register first"})
+        return res.status(404).send({status:false,msg:"register first"})
     }
 
     const token = jwt.sign({

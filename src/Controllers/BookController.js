@@ -58,7 +58,7 @@ const createBook=async function(req,res){
         return res.status(400).send({status:false,msg:"title is not valid"})
     }
 
-    if(!validator.dateIsValid(releasedAt)){
+    if(!validator.isValid(releasedAt)){
 
         return res.status(400).send({status:false,msg:"releasedAt date is not valid"})
     }
@@ -102,19 +102,19 @@ const createBook=async function(req,res){
   let userExists=await userModel.findById({_id:userId})
   if(!userExists){
     
-    return res.status(400).send({status:false,msg:"no user exists with this ID"})
+    return res.status(404).send({status:false,msg:"no user exists with this ID"})
 
   }
   let isbnExists=await bookModel.findOne({ISBN:ISBN})
-  if(isbnExists){
+  if(isbnExists!=null){
 
-    return res.status(400).send({status:false,msg:"isbn already exist choose other ISBN"})
+    return res.status(404).send({status:false,msg:"isbn already exist choose other ISBN"})
   }
 
   let titleExists=await bookModel.findOne({title:title})
-  if(titleExists){
+  if(titleExists!=null){
 
-    return res.status(400).send({status:false,msg:"title already exists"})
+    return res.status(404).send({status:false,msg:"title already exists"})
   }
 
   
@@ -124,11 +124,12 @@ const createBook=async function(req,res){
     return res.status(500).send({status:false,msg:"record is not inserted"})
 
   }
+  return res.status(201).send({status:false,msg:"record is inserted",insertedRecord})
 }catch{
     console.log("this is the error", error)
     res.status(500).send({ status: false, msg: error.message })
 
-  return res.status(201).send({status:false,msg:"record is inserted",data:insertedRecord})
+  
 }
 
 }
@@ -137,15 +138,43 @@ const createBook=async function(req,res){
 const getBooksByFilter=async function(req,res){
 try{
 let data=req.query;
+let{userId,category,subcategory}=data;
+let count=0;
 let records;
-let obj;
-
+let objectKeys=Object.keys(data)
+let keys=["userId","category","subcategory"];
+for(let i=0;i<objectKeys.length;i++)
+{
+    for(let j=0;j<keys.length;j++)
+    {
+        if(objectKeys[i]==keys[j])
+        {
+        count++;
+        break;
+        }
+    }
+} 
+if(count!=objectKeys.length)
+return res.status(400).send({status:false,msg:"invalid key selection"})
+else{
+{
 if(!validator.isValidRequestBody(data)){
 
-    return res.status(400).send({status:false,msg:"no user details given"})
+  
+        records=await bookModel.find().sort({title:1})
+        obj=new Object(records)
+        obj._id=records._id;
+        obj.title=records.title;
+        obj.excerpt=records.excerpt;
+        obj.userId=records.userId;
+        obj.category=records.category;
+        obj.releasedAt=records.releasedAt;
+        obj.reviews=records.reviews;
+    
+    
 }
 
-let{userId,category,subcategory}=data;
+
 
 if(userId){
 if(!validator.isValidObjectId(userId)){
@@ -169,13 +198,12 @@ if(!validator.isValid(subcategory)){
 
  if(category && subcategory && userId)
  {
-  let recordsWithThree=await bookModel.find({userId:userId,category:category,subcategory:subcategory})
-  if(recordsWithThree.length==0){
-   return res.status(400).send({status:false,msg:"record is not found with these combinations"})
+  let recordsWithThree=await bookModel.find({userId:userId,category:category,subcategory:subcategory,isDeleted:false})
+  if(!recordsWithThree.length){
+   return res.status(404).send({status:false,msg:"record is not found with these combinations"})
   
  }
-  records=await bookModel.find({userId:userId,category:category,subcategory:subcategory})
-  console.log(records)
+  records=await bookModel.find({userId:userId,category:category,subcategory:subcategory,isDeleted:false}).sort({title:1})
   obj=new Object(records)
    obj._id=records._id;
    obj.title=records.title;
@@ -188,12 +216,11 @@ if(!validator.isValid(subcategory)){
  }
  
  else if(category && subcategory){
- let recordsWithBoth=await bookModel.find({category:category,subcategory:subcategory})
- console.log(recordsWithBoth)
- if(recordsWithBoth.length==0){
-     return res.status(400).send({status:false,msg:"record is not found with these combinations"})
+ let recordsWithBoth=await bookModel.find({category:category,subcategory:subcategory,isDeleted:false})
+ if(!recordsWithBoth.length){
+     return res.status(404).send({status:false,msg:"record is not found with these combinations"})
  }
- records=await bookModel.find({category:category,subcategory:subcategory})
+ records=await bookModel.find({category:category,subcategory:subcategory,isDeleted:false}).sort({title:1})
  obj=new Object(records)
  obj._id=records._id;
  obj.title=records.title;
@@ -207,11 +234,11 @@ if(!validator.isValid(subcategory)){
  }
 
  else if(subcategory && userId){
-     let recordsWithBoth=await bookModel.find({category:category,subcategory:subcategory})
-     if(recordsWithBoth.length){
-         return res.status(400).send({staus:false,msg:"records are not found with these combinations"})
+     let recordsWithBoth=await bookModel.find({userId:userId,subcategory:subcategory,isDeleted:false})
+     if(!recordsWithBoth.length){
+         return res.status(404).send({staus:false,msg:"records are not found with these combinations"})
      }
-    records=await bookModel.find({userId:userId,subcategory:subcategory})
+    records=await bookModel.find({userId:userId,subcategory:subcategory,isDeleted:false}).sort({title:1})
     obj=new Object(records)
     obj._id=records._id;
     obj.title=records.title;
@@ -223,11 +250,11 @@ if(!validator.isValid(subcategory)){
  }
 
  else if(userId && category){
-    let recordWithBoth=await bookModel.find({userId:userId,category:category})
-    if(recordWithBoth.length){
-        return res.status(400).send({status:false,msg:"records are not found with these combinations"})
+    let recordWithBoth=await bookModel.find({userId:userId,category:category,isDeleted:false})
+    if(!recordWithBoth.length){
+        return res.status(404).send({status:false,msg:"records are not found with these combinations"})
     }
-    records=await bookModel.find({userId:userId,category})
+    records=await bookModel.find({userId:userId,category:category,isDeleted:false}).sort({title:1})
     obj=new Object(records)
     obj._id=records._id;
     obj.title=records.title;
@@ -239,11 +266,11 @@ if(!validator.isValid(subcategory)){
 
  }
  else if(userId){
- let userExist=await bookModel.find({userId:userId})
- if(userExist.length){
-     return res.status(400).send({status:false,msg:"wrong userId"})
+ let userExist=await bookModel.find({userId:userId,isDeleted:false})
+ if(!userExist){
+     return res.status(404).send({status:false,msg:"no record found"})
  }
- records =await bookModel.find({userId:userId})
+ records =await bookModel.find({userId:userId,isDeleted:false}).sort({title:1})
  obj=new Object(records)
  obj._id=records._id;
  obj.title=records.title;
@@ -256,11 +283,11 @@ if(!validator.isValid(subcategory)){
  
 
  else if(category){
-    let categoryExists=await bookModel.find({category:category})
-    if(categoryExists.length==0){
-        return res.status(400).send({status:false,msg:"wrong category"})
+    let categoryExists=await bookModel.find({category:category,isDeleted:false})
+    if(!categoryExists){
+        return res.status(404).send({status:false,msg:"wrong category"})
     }
-    records=await bookModel.find({category:category})
+    records=await bookModel.find({category:category,isDeleted:false}).sort({title:1})
     obj=new Object(records)
     obj._id=records._id;
     obj.title=records.title;
@@ -272,11 +299,11 @@ if(!validator.isValid(subcategory)){
  }
 
 else if(subcategory){
-    let subcategoryExists=await bookModel.find({subcategory:subcategory})
-    if(subcategoryExists.length==0){
-        return res.status(400).send({status:false,msg:"wrong subcategory"})
+    let subcategoryExists=await bookModel.find({subcategory:subcategory,isDeleted:false})
+    if(!subcategoryExists){
+        return res.status(404).send({status:false,msg:"wrong subcategory"})
     }
-    records=await bookModel.find({subcategory:subcategory})
+    records=await bookModel.find({subcategory:subcategory,isDeleted:false}).sort({title:1})
     obj=new Object(records)
     obj._id=records._id;
     obj.title=records.title;
@@ -289,14 +316,16 @@ else if(subcategory){
 if(Object.keys(obj).length>0)
 return res.status(200).send({status:true,msg:"succcess",obj})
 else
-return res.status(400).send({status:false,msg:"no records are found"})
-}catch(err){
-     
+return res.status(500).send({status:false,msg:"no records are found"})
+}
+}
+}catch(error){
+   
     console.log("this is the error", error)
     res.status(500).send({ status: false, msg: error.message })
 
-}
 
+}
 }
 
 
@@ -308,30 +337,37 @@ const getBooksByBookId=async function(req,res){
   bookId=req.params.bookId;
   
 
-  if(!bookId){
-
-    return res.status(400).send({status:false,msg:"bookId is missing"})
-  }
 
   if(!validator.isValidObjectId(bookId)){
 
     return res.status(400).send({status:false,msg:"userId is not valid"})
   }
    
- let bookData=await bookModel.findById({_id:bookId})
- if(!bookData){
+ let bookData=await bookModel.findOne({_id:bookId})
+ if(bookData==null){
      
-    return res.status(400).send({status:false,msg:"no book data is present with theis book Id"})
+    return res.status(404).send({status:false,msg:"no book exist with this bookId"})
 
+ }
+ let bookIsNotDeleted=await bookModel.findOne({_id:bookId,isDeleted:false})
+ if(bookIsNotDeleted==null){
+     return res.status(404).send({status:false,msg:"book is deleted with this bookId"})
  }
  
  let reviewData=await reviewModel.find({bookId:bookId})
+ if(!reviewData.length){
+     return res.status(404).send({status:false,msg:"no review exists with this bookId"})
+ }
+ let reviewIsDeleted=await reviewModel.find({bookId:bookId,isDeleted:false})
+ if(!reviewIsDeleted.length){
+    return res.status(404).send({status:false,msg:"review is deleted with this reviewId"})
+ }
 
  let data=new Object(null)
  data.bookData=bookData
  data.reviewData=reviewData;
  if(!data){
-     return res.status(400).send({status:false,message:"no data is available for this bookId"})
+     return res.status(404).send({status:false,message:"no data is available for this bookId"})
  }
  return res.status(200).send({status:true,message:"Books list",data:data})
 
@@ -351,24 +387,21 @@ let data=req.body;
 let{title,excerpt,ISBN,releasedAt}=data;
 
 
-if(!bookId){
-
-    return res.status(400).send({status:false,message:"bookId is required"})
-}
 
 if(!validator.isValidObjectId(bookId)){
 
     return res.status(400).send({status:false,msg:"userId is not valid"})
   }
   
-let bookIdPresent=await bookModel.findById({_id:bookId})
-if(!bookIdPresent){
+let bookIdPresent=await bookModel.findOne({_id:bookId})
+if(bookIdPresent==null){
 
-    return res.status(400).send({status:false,msg:"bookId is not present"})
+    return res.status(404).send({status:false,msg:"no book exists with this bookId"})
 }
-if(bookId.isDeleted){
+let bookIsNotDeleted=await bookModel.findOne({_id:bookId,isDeleted:false})
+if(bookIsNotDeleted==null){
 
-    return res.status(400).send({status:false,msg:"isDeleted is not false"})
+    return res.status(404).send({status:false,msg:"book is already deleted with this bookId"})
 }
 
   if(title){
@@ -407,7 +440,7 @@ if(ISBN && releasedAt && title && excerpt){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -425,7 +458,7 @@ else if(title && excerpt && ISBN){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -443,7 +476,7 @@ else if(excerpt && ISBN && releasedAt){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -463,7 +496,7 @@ else if(ISBN && releasedAt && title){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -483,7 +516,7 @@ else if(title && excerpt){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -500,7 +533,7 @@ else if(ISBN && excerpt){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -518,7 +551,7 @@ else if(ISBN && title){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -534,7 +567,7 @@ else if(ISBN){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -550,7 +583,7 @@ else if(title){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -567,7 +600,7 @@ else if(excerpt){
 
     if(!newRecord){
 
-        return res.status(400).return({status:false,message:"data is not updated"})
+        return res.status(500).return({status:false,message:"data is not updated"})
     }
     
     return res.status(200).send({status:true,message:"success",newRecord})
@@ -584,46 +617,44 @@ else if(excerpt){
 
 
 const deleteBookByBookId=async function(req,res){
-    
-try{
-bookId=req.params.bookId;
-if(!bookId){
+   try{ 
 
-    return res.status(400).send({status:false,msg:"bookId is not available"})
-}
+bookId=req.params.bookId;
+
 if(!validator.isValidObjectId(bookId)){
 
     return res.status(400).send({status:false,msg:"bookId is invalid"})
 }
 
 let bookIdExists=await bookModel.findById({_id:bookId})
-if(!bookIdExists){
 
-    return res.status(400).send({status:false,msg:"no book exists with this bookId"})
+if(bookIdExists==null){
+
+    return res.status(404).send({status:false,msg:"no book exists with this bookId"})
 }
 
-let bookNotDeleted=await bookModel.findById({_id:bookId,isDeleted:false})
-if(!bookNotDeleted){
+let bookNotDeleted=await bookModel.findOne({_id:bookId,isDeleted:false})
+if(bookNotDeleted==null){
     
-    return res.status(400).send({status:false,msg:"book is already deleted"})
+    return res.status(404).send({status:false,msg:"book is already deleted"})
 
 }
 let updatedBook=await bookModel.findOneAndUpdate(
 
     {_id:bookId},
-    {isDeleted:true,deletedAt:new Date()},
+    {$set:{isDeleted:true,deletedAt:new Date()}},
     {new:true,upsert:true}
 )
 
 let deleteReview=await reviewModel.updateMany(
 
     {bookId:bookId},
-    {isDeleted:true},
+    {$set:{isDeleted:true}},
     {new:true,upsert:true}
     )
 
 return res.status(200).send({status:false,msg:"success",updatedBook,deleteReview})
-}catch{
+   }catch{
 
     console.log("this is the error", error)
     res.status(500).send({ status: false, msg: error.message })
