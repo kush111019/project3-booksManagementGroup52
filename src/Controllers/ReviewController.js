@@ -38,7 +38,7 @@ if(!bookIsNotDeleted){
 
 let{review, rating, reviewedBy,isDeleted}=data;
 
-if(!reviewedBy && !review && !isDeleted && reviewedBy){
+if(!reviewedBy && !review && !isDeleted && !reviewedBy){
     
      data={
 

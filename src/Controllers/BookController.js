@@ -619,7 +619,7 @@ else if(excerpt){
 const deleteBookByBookId=async function(req,res){
    try{ 
 
-bookId=req.params.bookId;
+let bookId=req.params.bookId;
 
 if(!validator.isValidObjectId(bookId)){
 
